@@ -1,2 +1,2 @@
 # PPV
-Peruvian Potato Viroeme
+Peruvian Potato Virome
