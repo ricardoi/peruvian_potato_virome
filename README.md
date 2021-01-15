@@ -1,5 +1,4 @@
-# PPV
-Peruvian Potato Virome
+# Peruvian Potato Virome (PPV)
 
 it is a project of the International Potato Center [CIP](https://cipotato.org/) in collaboration with Dr. Kreuze at **CIP** & Dr. [Garrett](https://www.garrettlab.com/) and [I](https://ricardoi.github.io/) from the department of [Plant Pathology](https://plantpath.ifas.ufl.edu/), Emerginc Pathogens Institute [EPI](https://epi.ufl.edu/) and Food Systems Institute [FSI](https://foodsystems.ifas.ufl.edu/) at the University of Florida. 
 
