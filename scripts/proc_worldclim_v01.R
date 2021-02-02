@@ -9,7 +9,8 @@ setwd("~/Dropbox (UFL)/Alcala_Briseno-Garrett/++Papa_virome/papa/")
 
 # load libraries
 library(raster)
-
+library(tidyverse)
+library(usdm)
 
 # monthly climate data
 # 19 GeoTiff (.tif)
@@ -17,7 +18,7 @@ library(raster)
 # wordclim version: 2.1
 
 # variables:
-# minimum temperature (°C)	      | tmin |
+{# minimum temperature (°C)	      | tmin |
 # maximum temperature (°C)	      | tmax |
 # average temperature (°C)	      | tavg |
 # precipitation (mm)              | prec |
@@ -49,10 +50,12 @@ library(raster)
 # BIO17 = Precipitation of Driest Quarter
 # BIO18 = Precipitation of Warmest Quarter
 # BIO19 = Precipitation of Coldest Quarter
+}
 
 # load incidence matrix 
 # potato virome presence absence data
-ppv <- read.csv("peruvian_potato_virome.csv")
+ppv <- as_tibble(read.csv("papa_Data_Virome_v2.csv")) %>%
+        select(Latitude, Longitude, Host...Isolation.source)
 
 # isolate latitude and longitude for each sample locations
 head(ppv)
@@ -64,26 +67,133 @@ head(ppv)
 vars <- c("tmin", "tmax", "tavg", "prec", "srad", "wind", "vapr")
 bioclim <- paste0("BIO", 1:19)
 
-tmin = tmax = tavg = prec = srad = wind = vapr = list()
+# creating lists
+# for bioclimatic variables and elevation
+tmin = tmax = tavg = prec = srad = wind = vapr = bio = elev = list()
 
 # tmin
+dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_tmin/")
+tmins = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
+for (t in seq_along(tmins)){
+  tmin[[t]] <- raster(tmins[[t]])
+}
+tmins <- raster::stack(tmin[1], tmin[2], tmin[3], tmin[4], tmin[5], tmin[6], 
+                       tmin[7], tmin[8], tmin[9], tmin[10], tmin[11], tmin[12])
+
+# tmax
+dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_tmax/")
+tmaxs = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
+for (t in seq_along(tmaxs)){
+  tmax[[t]] <- raster(tmaxs[[t]])
+}
+tmaxs <- raster::stack(tmax[1], tmax[2], tmax[3], tmax[4], tmax[5], tmax[6], 
+                       tmax[7], tmax[8], tmax[9], tmax[10], tmax[11], tmax[12])
+# tavg
+dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_tavg/")
+tavgs = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
+for (t in seq_along(tavgs)){
+  tavg[[t]] <- raster(tavgs[[t]])
+}
+tavgs <- raster::stack(tavg[1], tavg[2], tavg[3], tavg[4], tavg[5], tavg[6], 
+                       tavg[7], tavg[8], tavg[9], tavg[10], tavg[11], tavg[12])
+# prec
+dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_prec/")
+precs = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
+for (t in seq_along(precs)){
+  prec[[t]] <- raster(precs[[t]])
+}
+precs <- raster::stack(prec[1], prec[2], prec[3], prec[4], prec[5], prec[6], 
+                       prec[7], prec[8], prec[9], prec[10], prec[11], prec[12])
+# srad
+dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_srad/")
+srads = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
+for (t in seq_along(srads)){
+  srad[[t]] <- raster(srads[[t]])
+}
+srads <- raster::stack(srad[1], srad[2], srad[3], srad[4], srad[5], srad[6], 
+                       srad[7], srad[8], srad[9], srad[10], srad[11], srad[12])
+# wind
+dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_wind/")
+winds = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
+for (t in seq_along(winds)){
+  wind[[t]] <- raster(winds[[t]])
+}
+winds <- raster::stack(wind[1], wind[2], wind[3], wind[4], wind[5], wind[6], 
+                       wind[7], wind[8], wind[9], wind[10], wind[11], wind[12])
+# vapr
+dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_vapr/")
+vaprs = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
+for (t in seq_along(vaprs)){
+  vapr[[t]] <- raster(vaprs[[t]])
+}
+vaprs <- raster::stack(vapr[1], vapr[2], vapr[3], vapr[4], vapr[5], vapr[6], 
+                       vapr[7], vapr[8], vapr[9], vapr[10], vapr[11], vapr[12])
+#---- BIOCLIM
+# bio
+dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_bio/")
+bios = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
+for (t in seq_along(bios)){
+  bio[[t]] <- raster(bios[[t]])
+}
+bios <- raster::stack(bio[1], bio[2], bio[3], bio[4], bio[5], bio[6], 
+                      bio[7], bio[8], bio[9], bio[10], bio[11], bio[12],
+                      bio[13], bio[14], bio[15], bio[16], bio[17], bio[18],
+                      bio[19])
+# elev
+dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_elev/")
+elevs = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
+for (t in seq_along(elevs)){
+  elev[[t]] <- raster(elevs[[t]])
+}
+elevs <- raster::stack(elev[1])
+
+### then stack all of the stacks 
+
+all.vars <- raster::stack(tmin[[1]], tmin[[2]], tmin[[3]], tmin[[4]], tmin[[5]], tmin[[6]],
+                          tmin[[7]], tmin[[8]], tmin[[9]], tmin[[10]], tmin[[11]], tmin[[12]],
+                          tmax[[1]], tmax[[2]], tmax[[3]], tmax[[4]], tmax[[5]], tmax[[6]],
+                          tmax[[7]], tmax[[8]], tmax[[9]], tmax[[10]], tmax[[11]], tmax[[12]],
+                          tavg[[1]], tavg[[2]], tavg[[3]], tavg[[4]], tavg[[5]], tavg[[6]],
+                          tavg[[7]], tavg[[8]], tavg[[9]], tavg[[10]], tavg[[11]], tavg[[12]],
+                          prec[[1]], prec[[2]], prec[[3]], prec[[4]], prec[[5]], prec[[6]],
+                          prec[[7]], prec[[8]], prec[[9]], prec[[10]], prec[[11]], prec[[12]],
+                          srad[[1]], srad[[2]], srad[[3]], srad[[4]], srad[[5]], srad[[6]],
+                          srad[[7]], srad[[8]], srad[[9]], srad[[10]], srad[[11]], srad[[12]],
+                          wind[[1]], wind[[2]], wind[[3]], wind[[4]], wind[[5]], wind[[6]],
+                          wind[[7]], wind[[8]], wind[[9]], wind[[10]], wind[[11]], wind[[12]],
+                          vapr[[1]], vapr[[2]], vapr[[3]], vapr[[4]], vapr[[5]], vapr[[6]],
+                          vapr[[7]], vapr[[8]], vapr[[9]], vapr[[10]], vapr[[11]], vapr[[12]],
+                          bio[[1]], bio[[2]], bio[[3]], bio[[4]], bio[[5]], bio[[6]],
+                          bio[[7]], bio[[8]], bio[[9]], bio[[10]], bio[[11]], bio[[12]],
+                          elev[[1]])
 
 
-wc2.0_30s_tmin_01<- raster("Data5/wc2.0_30s_srad/wc2.0_30s_tmin_01.tif")
-wc2.0_30s_srad_02<- raster("Data5/wc2.0_30s_srad/wc2.0_30s_srad_02.tif")
-wc2.0_30s_srad_03<- raster("Data5/wc2.0_30s_srad/wc2.0_30s_srad_03.tif")
-wc2.0_30s_srad_04<- raster("Data5/wc2.0_30s_srad/wc2.0_30s_srad_04.tif")
-wc2.0_30s_srad_05<- raster("Data5/wc2.0_30s_srad/wc2.0_30s_srad_05.tif")
-wc2.0_30s_srad_06<- raster("Data5/wc2.0_30s_srad/wc2.0_30s_srad_06.tif")
-wc2.0_30s_srad_07<- raster("Data5/wc2.0_30s_srad/wc2.0_30s_srad_07.tif")
-wc2.0_30s_srad_08<- raster("Data5/wc2.0_30s_srad/wc2.0_30s_srad_08.tif")
-wc2.0_30s_srad_09<- raster("Data5/wc2.0_30s_srad/wc2.0_30s_srad_09.tif")
-wc2.0_30s_srad_10<- raster("Data5/wc2.0_30s_srad/wc2.0_30s_srad_10.tif")
-wc2.0_30s_srad_11<- raster("Data5/wc2.0_30s_srad/wc2.0_30s_srad_11.tif")
-wc2.0_30s_srad_12<- raster("Data5/wc2.0_30s_srad/wc2.0_30s_srad_12.tif")
 
 
-# stack rasters
-sradStack <- raster::stack(wc2.0_30s_srad_01, wc2.0_30s_srad_02, wc2.0_30s_srad_03, wc2.0_30s_srad_04, wc2.0_30s_srad_05, wc2.0_30s_srad_06, wc2.0_30s_srad_07, wc2.0_30s_srad_08, wc2.0_30s_srad_09, wc2.0_30s_srad_10, wc2.0_30s_srad_11, wc2.0_30s_srad_12)
+# select data based on disease incidence 
+extractedVIF <- raster::extract(all.vars, ppv[,1:2])
+# 
+vifcor(extractedVIF,th=0.95)
+
+# remove hightly coorelated variables
+VIFvars <- vifstep(extractedVIF, th = 60)
+
+### now create a new stack with just the reduced set of predictors 
+
+#Could be something like: 
+
+condensedStacka <- raster::stack(wc2.0_30s_prec_03, 
+                                 wc2.0_30s_prec_04,
+                                 wc2.0_30s_prec_05,
+                                 wc2.0_30s_prec_06,
+                                 wc2.0_30s_prec_08,
+                                 wc2.0_30s_prec_09,
+                                 wc2.0_30s_prec_10, 
+                                 wc2.0_30s_prec_12, 
+                                 wc2.0_30s_tmax_06, 
+                                 wc2.0_30s_tmin_05, 
+                                 wc2.0_30s_srad_06, 
+                                 wc2.0_30s_srad_09, 
+                                 wc2.0_30s_srad_10)
 
 
