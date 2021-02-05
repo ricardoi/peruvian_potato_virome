@@ -55,7 +55,7 @@ library(usdm)
 # load incidence matrix 
 # potato virome presence absence data
 ppv <- as_tibble(read.csv("papa_Data_Virome_v2.csv")) %>%
-        select(Latitude, Longitude, Host...Isolation.source)
+        dplyr::select(Latitude, Longitude, 4)
 
 # isolate latitude and longitude for each sample locations
 head(ppv)
@@ -182,18 +182,24 @@ VIFvars <- vifstep(extractedVIF, th = 60)
 
 #Could be something like: 
 
-condensedStacka <- raster::stack(wc2.0_30s_prec_03, 
-                                 wc2.0_30s_prec_04,
-                                 wc2.0_30s_prec_05,
-                                 wc2.0_30s_prec_06,
-                                 wc2.0_30s_prec_08,
-                                 wc2.0_30s_prec_09,
-                                 wc2.0_30s_prec_10, 
-                                 wc2.0_30s_prec_12, 
-                                 wc2.0_30s_tmax_06, 
-                                 wc2.0_30s_tmin_05, 
-                                 wc2.0_30s_srad_06, 
-                                 wc2.0_30s_srad_09, 
-                                 wc2.0_30s_srad_10)
-
-
+condensedStacka <- raster::stack(prec[[1]], # wc2.1_30s_prec_01 
+                                 prec[[8]], #wc2.1_30s_prec_08
+                                 prec[[11]], #wc2.1_30s_prec_11
+                                 prec[[12]], #wc2.1_30s_prec_12
+                                 srad[[1]], #wc2.1_30s_srad_01
+                                 srad[[2]], #wc2.1_30s_srad_02
+                                 srad[[3]], #wc2.1_30s_srad_03
+                                 srad[[4]], #wc2.1_30s_srad_04
+                                 srad[[6]], #wc2.1_30s_srad_06
+                                 srad[[7]], #wc2.1_30s_srad_07
+                                 srad[[9]], #wc2.1_30s_srad_09
+                                 srad[[10]], #wc2.1_30s_srad_10
+                                 srad[[12]], #wc2.1_30s_srad_12
+                                 vapr[[3]], #wc2.1_30s_vapr_03
+                                 vapr[[5]], #wc2.1_30s_vapr_05
+                                 vapr[[7]], #wc2.1_30s_vapr_07
+                                 vapr[[8]], #wc2.1_30s_vapr_08
+                                 vapr[[9]], #wc2.1_30s_vapr_09
+                                 vapr[[10]], #wc2.1_30s_vapr_10
+                                 bio[[14]], #wc2.1_30s_bio_14
+                                 bio[[2]]) #wc2.1_30s_bio_2)
