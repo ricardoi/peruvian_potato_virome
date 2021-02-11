@@ -132,36 +132,50 @@ dim(papa)
 dat=papa
 
 #------
-nhl <- papa[papa$Sample_code %in% hl$CIP_Code,]
-ncl <- papa[papa$Sample_code %in% cl$CIP_Code,]
-nfl <- papa[papa$Sample_code %in% fl$CIP_Code,]
+# Plot of mean contig length after removal of 50 nt
+plot(dat$Length, (dat$`Coverage_%`),  col="black",
+     xlab = "contig length", ylab = "log(mean cov)")
+title("Normalized mean \n cov and length\n
+      (thr = all)")
 
-dat=nhl 
-
-
-dat2 <- dat %>%
+#------
+alts <- list(nhl <- papa[papa$Sample_code %in% hl$CIP_Code,],
+             ncl <- papa[papa$Sample_code %in% cl$CIP_Code,],
+             nfl <- papa[papa$Sample_code %in% fl$CIP_Code,])
+#------
+# for (i in seq_along(alts)){
+i=1
+dat=alts[[i]]
+data <- dat %>%
   select(Library, Place, field, Sample_code, Reference, Length, `Coverage_%`, No.contig, Depth, Depth_norm, 
          Taxonomic_genome_length, `Genome_coverage_%`, New_Genus, New_virus, New_Acronym)
-datb <- ddply(dat2, .(Sample_code, New_Acronym), summarise, cov=mean(Depth))
+datb <- ddply(data, .(Sample_code, New_Acronym), summarise, cov=mean(Depth))
 datc <- na.omit(datb)
 datm <- tidyr::spread(datc, Sample_code, cov,  drop=TRUE , fill = 0)
-row.names(datm) = datm$n.Acronym
-papa.m= datm[-1]
-dim(papa.m)
+row.names(datm) = datm$New_Acronym
+datm= datm[-1]
+dim(datm)
+
+#--- Normalizationi
+print("normalizing dataset")
+dat.mat <- datm/colSums(datm)*100
+dat.mat = round(dat.mat, digits = 0)
 #--------------------------------------------------------------------------------------
 # Calculating metrics ## UNCOMMENT ALL THIS FOR BIPARTITE METRICS
 # Bipartite analysis
-papa.m.sp.table  <- specieslevel(papa.m)
+nsp  <- specieslevel(dat.mat)
 #------------------------------------------------------------------------------------------------------------------------------
-g = graph.incidence(papa.m, weighted=T)
+g = graph.incidence(dat.mat, weighted=T)
 V(g)$type
-V(g)$name
-V(g)$size <- c(sqrt(rowSums(papa.m))/4, papa.m.sp.table$`higher level`$species.strength)
-# V(g)$color <- c(rep("#ffd450", nrow(papa.m)), rainbow(9))
-# rainbow(ncol)[as.numeric(cut(as.numeric(factor(as.character(papa1$Sample.code))), breaks = ncol))]
+V(g)$name <- c(V(g)$name[1:length(V(g)$type[V(g)$type == "FALSE"])], rep("", length(V(g)$type[V(g)$type == "TRUE"])))
+V(g)$size <- c(log(nsp$`lower level`$species.strength+5)*2, log(nsp$`higher level`$degree*5))
+V(g)$color <-  c(rep("orange", length(V(g)$type[V(g)$type == "FALSE"])), rep("blue", length(V(g)$type[V(g)$type == "TRUE"])))
 E(g)$weight <- 2
 shapes = c(rep("circle", length(V(g)$type[V(g)$type == "FALSE"])), rep("square", length(V(g)$type[V(g)$type == "TRUE"])))
-# pdf(paste("Network_by_department_by_percent_", i,".pdf", sep=""), width = 20, height = 20)
-plot(g,  vertex.shape=shapes, vertex.size=V(g)$size, vertex.label.cex = 1.7, vertex.label.color='black', vertex.frame.color="gray", #vertex.label=NA,
+p#df(paste0("Network_by_alt_", i,".pdf"), width = 20, height = 20)
+plot(g,  vertex.shape=shapes, vertex.size=V(g)$size, vertex.label.cex = 1, vertex.label.color='black', vertex.frame.color="gray", #vertex.label=NA,
      vertex.frame.color="gold",   edge.curved=F,  layout=layout_with_kk(g))
-# dev.off()
+#dev.off()
+#}
+
+
