@@ -69,54 +69,54 @@ table(metadata$altzones)
 
 #####----- Elevation Map: Not Working
 {
-  library(raster)
-# ----- get elevation data -------------------------
-dem1<- getData("SRTM",lat = 0, lon = -90)
-dem2<- getData("SRTM",lat = -20, lon = -65)
-dem <- merge(dem1,dem2)
-
-# ----- Country border -----------------------------
-gadm <- getData('GADM', country = "PERU", level = 0)
-# level = 0 country borders only 
-# level = 1 country and department borders
-# use st_read() if you have a shapefile
-
-#------ Add cities of reference  -------------------
-my_points = data.frame(
-  city = c('Lima', 'Cuzco'),
-  lon =  c(-77.05,  -72),
-  lat =  c(-12.05, -13.5)
-)
-
-#------  more libraries  -------------------
-library(sf)
-my_points = st_as_sf(my_points, coords = c("lon", "lat"), crs = 4326)
-
-# simplified your code a little, using extent() function ############
-#create polygon to crop the elevation data file   
-Ps1 = as(extent(-80, -69, -18, 0), 'SpatialPolygons')
-crs(Ps1) = "+proj=longlat +datum=WGS84 +no_defs"
-
-#crop the elevation data using the polygon
-# dem = crop(dem, Ps1, snap= 'out')
-
-#lower the reolution to enable faster plotting
-# dem_lower_res <- aggregate(dem, fact=10)
-dem.p  <-  rasterToPoints(dem)
-df <-  data.frame(dem.p)
-colnames(df) = c("lon", "lat", "alt")
-
-#plot the data
-library(ggplot2)
-ggplot(df) +
-  geom_raster(aes(lon, lat, fill = alt))+
-  scale_fill_gradientn(colours = terrain.colors(10))+
-  geom_sf(data= my_points, color= 'red')+                                         # point
-  geom_sf_label(data= my_points, aes(label= city), nudge_y = 0.1,  color= 'gray')+ # label
-  geom_tile(data=gadm, aes(long, lat))+
-  geom_tile(data= gadm, aes(long, lat), color= 'blue', fill= NA) +             # polygon
-  coord_sf(xlim = c(-83, -69), ylim = c(-18, 0))+
-  theme_bw()
+#   library(raster)
+# # ----- get elevation data -------------------------
+# dem1<- getData("SRTM",lat = 0, lon = -90)
+# dem2<- getData("SRTM",lat = -20, lon = -65)
+# dem <- merge(dem1,dem2)
+# 
+# # ----- Country border -----------------------------
+# gadm <- getData('GADM', country = "PERU", level = 0)
+# # level = 0 country borders only 
+# # level = 1 country and department borders
+# # use st_read() if you have a shapefile
+# 
+# #------ Add cities of reference  -------------------
+# my_points = data.frame(
+#   city = c('Lima', 'Cuzco'),
+#   lon =  c(-77.05,  -72),
+#   lat =  c(-12.05, -13.5)
+# )
+# 
+# #------  more libraries  -------------------
+# library(sf)
+# my_points = st_as_sf(my_points, coords = c("lon", "lat"), crs = 4326)
+# 
+# # simplified your code a little, using extent() function ############
+# #create polygon to crop the elevation data file   
+# Ps1 = as(extent(-80, -69, -18, 0), 'SpatialPolygons')
+# crs(Ps1) = "+proj=longlat +datum=WGS84 +no_defs"
+# 
+# #crop the elevation data using the polygon
+# # dem = crop(dem, Ps1, snap= 'out')
+# 
+# #lower the reolution to enable faster plotting
+# # dem_lower_res <- aggregate(dem, fact=10)
+# dem.p  <-  rasterToPoints(dem)
+# df <-  data.frame(dem.p)
+# colnames(df) = c("lon", "lat", "alt")
+# 
+# #plot the data
+# library(ggplot2)
+# ggplot(df) +
+#   geom_raster(aes(lon, lat, fill = alt))+
+#   scale_fill_gradientn(colours = terrain.colors(10))+
+#   geom_sf(data= my_points, color= 'red')+                                         # point
+#   geom_sf_label(data= my_points, aes(label= city), nudge_y = 0.1,  color= 'gray')+ # label
+#   geom_tile(data=gadm, aes(long, lat))+
+#   geom_tile(data= gadm, aes(long, lat), color= 'blue', fill= NA) +             # polygon
+#   coord_sf(xlim = c(-83, -69), ylim = c(-18, 0))+
+#   theme_bw()
 }
 #####
 #---- Peruvian Potato Virome
@@ -134,11 +134,11 @@ dat=papa
 #------
 # Plot of mean contig length after removal of 50 nt
 plot(dat$Length, (dat$`Coverage_%`),  col="black",
-     xlab = "contig length", ylab = "log(mean cov)")
-title("Normalized mean \n cov and length\n
+     xlab = "contig length", ylab = "mean cov")
+title("Normalized mean cov and length\n
       (thr = all)")
 
-#------
+#------ stacking the three altitudinals gradients
 alts <- list(nhl <- papa[papa$Sample_code %in% hl$CIP_Code,],
              ncl <- papa[papa$Sample_code %in% cl$CIP_Code,],
              nfl <- papa[papa$Sample_code %in% fl$CIP_Code,])
@@ -163,7 +163,10 @@ dat.mat = round(dat.mat, digits = 0)
 #--------------------------------------------------------------------------------------
 # Calculating metrics ## UNCOMMENT ALL THIS FOR BIPARTITE METRICS
 # Bipartite analysis
+nnl <- networklevel(dat.mat)
 nsp  <- specieslevel(dat.mat)
+nnd <- nestedcontribution(dat.mat)
+
 #------------------------------------------------------------------------------------------------------------------------------
 g = graph.incidence(dat.mat, weighted=T)
 V(g)$type
@@ -172,11 +175,47 @@ V(g)$size <- c(log(nsp$`lower level`$species.strength+5)*2, log(nsp$`higher leve
 V(g)$color <-  c(rep("orange", length(V(g)$type[V(g)$type == "FALSE"])), rep("blue", length(V(g)$type[V(g)$type == "TRUE"])))
 E(g)$weight <- 2
 shapes = c(rep("circle", length(V(g)$type[V(g)$type == "FALSE"])), rep("square", length(V(g)$type[V(g)$type == "TRUE"])))
-p#df(paste0("Network_by_alt_", i,".pdf"), width = 20, height = 20)
+#pdf(paste0("Network_by_alt_", i,".pdf"), width = 20, height = 20)
 plot(g,  vertex.shape=shapes, vertex.size=V(g)$size, vertex.label.cex = 1, vertex.label.color='black', vertex.frame.color="gray", #vertex.label=NA,
      vertex.frame.color="gold",   edge.curved=F,  layout=layout_with_kk(g))
 #dev.off()
 #}
+
+#------- Degree distribution
+degreedistr(dat.mat)
+nested(dat.mat, method="wine")
+#rarest species first:
+visweb(sortweb(dat.mat,sort.order="inc"), type="diagonal", labsize=3,
+       square="interaction", text="none", textsize = 4,circles=FALSE, frame=FALSE)
+
+#------ Diversity indices
+library(vegan)
+## alpha diversity 
+# data(BCI) #example data
+BCI = t(dat.mat) # transposing and changing name 
+H <- vegan::diversity(BCI)
+simp <- vegan::diversity(BCI, "simpson")
+invsimp <- vegan::diversity(BCI, "inv")
+## Unbiased Simpson (Hurlbert 1971, eq. 5) with rarefy:
+unbias.simp <- rarefy(BCI, 1) - 1
+## Fisher alpha
+alpha <- fisher.alpha(BCI)
+a1 <- fisherfit(BCI[1,])
+
+# estimate_richness(BCI, measures="Observed")
+
+## Plot all
+pairs(cbind(H, simp, invsimp, unbias.simp, alpha), pch="+", col="blue")
+## Species richness (S) and Pielou's evenness (J):
+S <- specnumber(BCI) ## rowSums(BCI > 0) does the same...
+J <- H/log(S)
+
+## beta diversity defined as gamma/alpha - 1:
+data(dune)
+data(dune.env)
+alpha <- with(dune.env, tapply(specnumber(dune), Management, mean))
+gamma <- with(dune.env, specnumber(dune, Management))
+gamma/alpha - 1
 
 
 #-----------------------------------------------------------------------------------------------------------------
@@ -191,6 +230,7 @@ plot(g,  vertex.shape=shapes, vertex.size=V(g)$size, vertex.label.cex = 1, verte
 # Bipartite projection 
 # Counting the number of interactions
 # Virus
+is.bipartite(g)
 g2 <- bipartite.projection(g)
 # Vertex names and attributes
 bnodes <- as.list(V(g2$proj1))
