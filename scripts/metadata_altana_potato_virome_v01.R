@@ -179,3 +179,30 @@ plot(g,  vertex.shape=shapes, vertex.size=V(g)$size, vertex.label.cex = 1, verte
 #}
 
 
+#-----------------------------------------------------------------------------------------------------------------
+# # Identify isolated nodes
+# g.cond <- V(g)[igraph::degree(g) == 1]
+# gi <- igraph::delete.vertices(g, g.cond) # Remove isolated nodes
+# plot(gi, edge.arrow.size=1, vertex.shape=shapes, vertex.label.cex=1.3, vertex.label.color='black', vertex.frame.color="gray", 
+#      vertex.frame.color="gold",   edge.curved=F,  layout=layout_with_dh(gi, maxiter=10 ,fineiter = 10, weight.edge.crossings = 1 - sqrt(edge_density(gi))))
+# legend(x=-1.3, y=1.1, legend[,2], pch=21,
+#        col=legend[,1], pt.bg=legend[,1], pt.cex=1, cex=.8, bty="n", ncol=1)
+#------------------------------------------------------------------------------------------------------------------------------
+# Bipartite projection 
+# Counting the number of interactions
+# Virus
+g2 <- bipartite.projection(g)
+# Vertex names and attributes
+bnodes <- as.list(V(g2$proj1))
+#V(g2$proj1)$color <- rcPal(14)[as.numeric(cut(as.numeric(factor(as.character(bnodes))), breaks = 14))]
+# Edges names and attributes
+#E(g2$proj1)$color <- rgPal(10)[as.numeric(cut(E(g2$proj1)$weight, breaks = 10))]
+gp1 <- get.adjacency(g2$proj1,sparse=FALSE,attr="weight")
+hist()
+plot(g2$proj1,edge.width=E(g2$proj1)$weight, vertex.label=V(g2$proj1)$name)
+gp2 <- get.adjacency(g2$proj2, sparse=FALSE, attr="weight")
+plot(g2$proj2,edge.width=E(g2$proj2)$weight^2, vertex.label=V(g2$proj2)$name)
+#--------------------------------------------------------
+
+
+
