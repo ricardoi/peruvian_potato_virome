@@ -273,12 +273,30 @@ BiocManager::install("phyloseq")
 library("phyloseq")
 
 data("GlobalPatterns")
+samp_dat <- ddply(dat, .(IDs, Department, Province, 
+                         District, Localidad, altzones), 
+                         summarise, length=mean(Length_mean))
+rownames(samp_dat) <- samp_dat$IDs
+dat.x <- ddply(ppv, .(Family, Genus, Species), summarise, RPKM=mean(RPKM_mean))
+dat.x$Family <- gsub( "^ ", "", dat.x$Family) 
+dat.x$Genus <- gsub( "^ ", "", dat.x$Genus) 
+dat.x$Species <- gsub( "^ ", "", dat.x$Species) 
+rownames(dat.mat) <- gsub( "^ ", "", rownames(dat.mat))
+
+rownames(dat.mat) %in% dat.x$Species
+colnames(dat.mat) %in% samp_dat$IDs
 
 # GP <- prune_taxa(taxa_sums(GlobalPatterns) > 0, GlobalPatterns)
-GlobalPatterns@otu_table
-ps <- phyloseq(otu_table(dat.mat, taxa_are_rows = T), tax_table())
+GlobalPatterns@sam_data
+ps <- phyloseq(otu_table(dat.mat, taxa_are_rows = T), taxa_names(dat.x), 
+               sample_data(samp_dat))
+ps
 # ps0 <- prune_taxa(taxa_sums(ps) > 0, ps)
 plot_richness(ps, measures=c("Observed", "Chao1", "Shannon","InvSimpson"))
+
+plot_richness(ps, x="altzones", measures=c("Observed", "Chao1", "Shannon","InvSimpson"))
+
+plot_richness(ps, x="altzones", color="Department", measures=c("Chao1", "Shannon"))
 
 #-----------------------------------------------------------------------------------------------------------------
 # # Identify isolated nodes
