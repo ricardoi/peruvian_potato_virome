@@ -164,9 +164,9 @@ alts <- list(nhl <- dat[dat$IDs %in% hl$CIP_Code,],
 
 
 #------ Summmary stats plots
-papa$Sample_code %in% metadata$CIP_Code 
+dat$IDs %in% metadata$CIP_Code 
 dat <- merge(dat, metadata[c(2, 1, 4, 5, 6, 7, 8, 12, 28)], by.x = "IDs", 
-             by.y = "CIP_Code", incomparables = T)
+             by.y = "CIP_Code", incomparables = F)
 # dim(dat); dim(papa)
 ggplot(dat, aes(x= factor(Genus), fill= Genus))+
   theme(legend.text = element_text(size= 14), legend.title = element_text(size= 14, face="bold"))+
@@ -185,8 +185,8 @@ ggplot(dat, aes(x= factor(Genus), fill= Genus))+
 
 #------
 zonas = c("hot land", "cold land", "frozen land")
-for (i in seq_along(alts)){
-# i=1
+# for (i in seq_along(alts)){
+i=1
 dat=alts[[i]]
 data <- dat %>%
   select(IDs, Family, Genus, Species, Acronym, Length_mean, Bases_mean,
@@ -260,8 +260,9 @@ J <- H/log(S)
 ## beta diversity defined as gamma/alpha - 1:
 data(dune)
 data(dune.env)
-alpha <- with(dune.env, tapply(specnumber(dune), Management, mean))
-gamma <- with(dune.env, specnumber(dune, Management))
+mtdt <- metadata[which(rownames(BCI) %in% metadata$CIP_Code),]
+alpha <- with(mtdt, tapply(specnumber(BCI), altzones, mean))
+gamma <- with(mtdt, specnumber(BCI, altzones))
 gamma/alpha - 1
 
 
