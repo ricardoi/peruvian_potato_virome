@@ -296,7 +296,7 @@ plot_richness(ps, measures=c("Observed", "Chao1", "Shannon","InvSimpson"))
 
 plot_richness(ps, x="altzones", measures=c("Observed", "Chao1", "Shannon","InvSimpson"))
 
-plot_richness(ps, x="altzones", color="Department", measures=c("Chao1", "Shannon"))
+plot_richness(ps, x="altzones", color="Department", measures=c("Observed", "Chao1", "Shannon", "InvSimpson"))
 
 #-----------------------------------------------------------------------------------------------------------------
 # # Identify isolated nodes
