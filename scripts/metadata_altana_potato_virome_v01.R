@@ -12,6 +12,7 @@ library(viridis)
 library(reshape2)
 library(tidyr)
 library(openxlsx)
+library(ggplot2)
 
 # ----- Adding metadata --------
 metadata <- read.xlsx("data/CIP/2_Viroma_web_180319_final.xlsx", sheet = 2)
@@ -120,31 +121,72 @@ table(metadata$altzones)
 }
 #####
 #---- Peruvian Potato Virome
+# 
+# papa1 <- read.xlsx("data/CIP/3_Potato_viroma_all_libaries_completed_Results_mod5.xlsx", sheet=1, startRow = 3)
+# papa1[1:5,1:15]
+# papa2 <- read.xlsx("data/CIP/3_Potato_viroma_all_libaries_completed_Results_mod5.xlsx", sheet=2)
+# papa2[1:5,1:15]
+# ncol(papa1) == ncol(papa2)
+# metadata2 <- rbind(papa1, papa2) %>% 
+#                 select("Library", "Place", "field", "Sample_code") 
+# md <- ddply(metadata2, .(Library, Place, Sample_code), summarise, cov=mean(as.numeric(field)))
+# metadata$CIP_Code %in% md$Sample_code
 
-papa1 <- read.xlsx("data/CIP/3_Potato_viroma_all_libaries_completed_Results_mod5.xlsx", sheet=1, startRow = 3)
-papa1[1:5,1:15]
-papa2 <- read.xlsx("data/CIP/3_Potato_viroma_all_libaries_completed_Results_mod5.xlsx", sheet=2)
-papa2[1:5,1:15]
-ncol(papa1) == ncol(papa2)
-papa <- rbind(papa1, papa2)
-papa[1:5,1:15]
-dim(papa)
-dat=papa
+peruvian_potato_virome <- read.csv("peruvian_potato_virome_vsc-rpkmx_ViNAtq_Feb11.csv")[-1]
+ppv = peruvian_potato_virome
+
+ppv[1:5,1:5]
+dim(ppv)
+dat=ppv
+
+# dat.x <- ddply(ppv, .(IDs, Species), summarise, RPKM=mean(RPKM_mean))
+# head(dat.x)
+
+#--------------- NOTES --------------
+# Altitude and latitude change b-diversity very high 
+#   and environment - paper in science about b-diversity change from tropic and northern
+#   sampling size affects beta and gamma - diversity 
+#   package Jost
+
 
 #------
 # Plot of mean contig length after removal of 50 nt
-plot(dat$Length, (dat$`Coverage_%`),  col="black",
-     xlab = "contig length", ylab = "mean cov")
-title("Normalized mean cov and length\n
+plot(dat$Length, log2(dat$RPKM),  col="black",
+     xlab = "contig length", ylab = "log2(RPKM)")
+abline(v=50, col="red")
+title("Normalized log2(RPKM) and length\n
       (thr = all)")
 
 #------ stacking the three altitudinals gradients
 alts <- list(nhl <- papa[papa$Sample_code %in% hl$CIP_Code,],
              ncl <- papa[papa$Sample_code %in% cl$CIP_Code,],
              nfl <- papa[papa$Sample_code %in% fl$CIP_Code,])
+
+
+#------ Summmary stats plots
+papa$Sample_code %in% metadata$CIP_Code 
+dat <- merge(dat, metadata[c(2, 1, 4, 5, 6, 7, 8, 12, 28)], by.x = "IDs", 
+             by.y = "CIP_Code", incomparables = T)
+# dim(dat); dim(papa)
+ggplot(dat, aes(x= factor(Genus), fill= Genus))+
+  theme(legend.text = element_text(size= 14), legend.title = element_text(size= 14, face="bold"))+
+  # geom_point(aes(y=RPKM_mean, fill = Genus), size = 2)+
+  geom_bar(position = "dodge")+
+  theme(axis.text.x = element_text(angle= 90, hjust = 1))+
+  theme(plot.title = element_text(hjust = 0.5, color ="1", face="bold", size=16))+
+  labs(y = "No. of hits", x = "Species")+
+  theme(axis.title = element_text(color="#666666", face="bold", size=16))+
+  theme(axis.text.x = element_text(color="1", size=8, angle=45),
+        axis.text.y = element_text(color="1", size=12 ))+
+  facet_grid(~ altzones )+
+  theme(strip.text.x = element_text(size = 18, colour = "1"))+
+  coord_flip()
+
+
 #------
-# for (i in seq_along(alts)){
-i=1
+zonas = c("hot land", "cold land", "frozen land")
+for (i in seq_along(alts)){
+# i=1
 dat=alts[[i]]
 data <- dat %>%
   select(Library, Place, field, Sample_code, Reference, Length, `Coverage_%`, No.contig, Depth, Depth_norm, 
@@ -157,29 +199,34 @@ datm= datm[-1]
 dim(datm)
 
 #--- Normalizationi
-print("normalizing dataset")
+print(paste("normalizing", zonas[i], "dataset", sep= " "))
 dat.mat <- datm/colSums(datm)*100
 dat.mat = round(dat.mat, digits = 0)
 #--------------------------------------------------------------------------------------
 # Calculating metrics ## UNCOMMENT ALL THIS FOR BIPARTITE METRICS
 # Bipartite analysis
+print(paste("calculating network for", zonas[i], sep = " "))
 nnl <- networklevel(dat.mat)
 nsp  <- specieslevel(dat.mat)
-nnd <- nestedcontribution(dat.mat)
-
+# nnd <- nestedcontribution(dat.mat)
+# plot(nnd$`lower level`)
 #------------------------------------------------------------------------------------------------------------------------------
+print(paste("graph for", zonas[i], sep= " "))
 g = graph.incidence(dat.mat, weighted=T)
 V(g)$type
 V(g)$name <- c(V(g)$name[1:length(V(g)$type[V(g)$type == "FALSE"])], rep("", length(V(g)$type[V(g)$type == "TRUE"])))
 V(g)$size <- c(log(nsp$`lower level`$species.strength+5)*2, log(nsp$`higher level`$degree*5))
 V(g)$color <-  c(rep("orange", length(V(g)$type[V(g)$type == "FALSE"])), rep("blue", length(V(g)$type[V(g)$type == "TRUE"])))
-E(g)$weight <- 2
+E(g)$weight <- 3
 shapes = c(rep("circle", length(V(g)$type[V(g)$type == "FALSE"])), rep("square", length(V(g)$type[V(g)$type == "TRUE"])))
-#pdf(paste0("Network_by_alt_", i,".pdf"), width = 20, height = 20)
+pdf(paste0("Network_by_alt_", i,".pdf"), width = 20, height = 20)
 plot(g,  vertex.shape=shapes, vertex.size=V(g)$size, vertex.label.cex = 1, vertex.label.color='black', vertex.frame.color="gray", #vertex.label=NA,
      vertex.frame.color="gold",   edge.curved=F,  layout=layout_with_kk(g))
-#dev.off()
-#}
+dev.off()
+pdf(paste0("Degree_distr_", i,".pdf"), width = 20, height = 20)
+degreedistr(dat.mat)
+dev.off()
+}
 
 #------- Degree distribution
 degreedistr(dat.mat)
@@ -187,6 +234,7 @@ nested(dat.mat, method="wine")
 #rarest species first:
 visweb(sortweb(dat.mat,sort.order="inc"), type="diagonal", labsize=3,
        square="interaction", text="none", textsize = 4,circles=FALSE, frame=FALSE)
+
 
 #------ Diversity indices
 library(vegan)
@@ -200,8 +248,7 @@ invsimp <- vegan::diversity(BCI, "inv")
 unbias.simp <- rarefy(BCI, 1) - 1
 ## Fisher alpha
 alpha <- fisher.alpha(BCI)
-a1 <- fisherfit(BCI[1,])
-
+# a1 <- fisherfit(BCI[1,])
 # estimate_richness(BCI, measures="Observed")
 
 ## Plot all
@@ -217,6 +264,20 @@ alpha <- with(dune.env, tapply(specnumber(dune), Management, mean))
 gamma <- with(dune.env, specnumber(dune, Management))
 gamma/alpha - 1
 
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("phyloseq")
+library("phyloseq")
+
+data("GlobalPatterns")
+
+# GP <- prune_taxa(taxa_sums(GlobalPatterns) > 0, GlobalPatterns)
+GlobalPatterns@otu_table
+ps <- phyloseq(otu_table(dat.mat, taxa_are_rows = T), tax_table())
+# ps0 <- prune_taxa(taxa_sums(ps) > 0, ps)
+plot_richness(ps, measures=c("Observed", "Chao1", "Shannon","InvSimpson"))
 
 #-----------------------------------------------------------------------------------------------------------------
 # # Identify isolated nodes
