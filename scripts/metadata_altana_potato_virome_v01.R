@@ -14,6 +14,13 @@ library(tidyr)
 library(openxlsx)
 library(ggplot2)
 
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+ # install.packages("BiocManager")
+#BiocManager::install("phyloseq")
+library("phyloseq")
+library(vegan)
+library(DESeq2)
+
 # ----- Adding metadata --------
 metadata <- read.xlsx("2_Viroma_web_180319_final.xlsx", sheet = 2)
 metadata <- metadata %>% select_if(~!all(is.na(.)))
@@ -183,12 +190,13 @@ ggplot(dat, aes(x= factor(Genus), fill= Genus))+
   coord_flip()
 
 
-#------
+#------ subsampling by altitude
 zonas = c("hot land", "cold land", "frozen land")
-# for (i in seq_along(alts)){
+g.zonas = list()
+ for (i in seq_along(alts)){
 i=1
 dat=alts[[i]]
-data <- dat %>%
+g.zonas[[1]] <- dat %>%
   select(IDs, Family, Genus, Species, Acronym, Length_mean, Bases_mean,
          Coverage_mean, Reads_mean, RPKM_mean, Frags_mean, FPKM_mean)
 datb <- ddply(data, .(IDs, Species), summarise, cov=mean(RPKM_mean))
@@ -197,7 +205,7 @@ datm <- tidyr::spread(datc, IDs, cov,  drop=TRUE , fill = 0)
 row.names(datm) = datm$Species
 datm= datm[-1]
 dim(datm)
-
+}
 #--- Normalizationi
 print(paste("normalizing", zonas[i], "dataset", sep= " "))
 dat.mat <- datm/colSums(datm)*100
@@ -266,11 +274,7 @@ gamma <- with(mtdt, specnumber(BCI, altzones))
 gamma/alpha - 1
 
 
-if (!requireNamespace("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
 
-BiocManager::install("phyloseq")
-library("phyloseq")
 
 data("GlobalPatterns")
 samp_dat <- ddply(dat, .(IDs, Department, Province, 
