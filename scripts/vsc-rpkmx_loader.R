@@ -12,3 +12,13 @@ for (i in seq_along(files)){
 }
 ls[[1]]
 
+peruvian_potato_virome <- rbind.fill(ls)
+
+
+write.csv(peruvian_potato_virome, "peruvian_potato_virome_vsc-rpkmx_ViNAtq_Feb11.csv")
+
+ppv= peruvian_potato_virome
+# how to read all csv's 
+# dat.x <- ddply(ppv, .(IDs, Species), summarise, RPKM=mean(RPKM_mean))
+# head(dat.x)
+

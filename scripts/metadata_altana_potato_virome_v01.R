@@ -4,7 +4,7 @@
 setwd("/Users/ricardoi/Dropbox (UFL)/Alcala_Briseno-Garrett/++Papa_virome/+papa/3-results/")
 
 #----- Loading libraries -------
-library(bipartite)
+library(bipartiteD3)
 library(igraph)
 library(dplyr)
 library(plyr)
@@ -14,12 +14,17 @@ library(tidyr)
 library(openxlsx)
 library(ggplot2)
 
-#if (!requireNamespace("BiocManager", quietly = TRUE))
- # install.packages("BiocManager")
-#BiocManager::install("phyloseq")
-library("phyloseq")
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("phyloseq")
+# BiocManager::install("DESeq2")
+# devtools::install_github("slowkow/ggrepel", force = T)
+
+library(ggrepel)
+library(phyloseq)
 library(vegan)
-library(DESeq2)
+# library(DESeq2)
 
 # ----- Adding metadata --------
 metadata <- read.xlsx("2_Viroma_web_180319_final.xlsx", sheet = 2)
@@ -63,16 +68,14 @@ abline(h =c(1000, 2000, 3400), col = "red")
 
 
 #---- lat-lon
-
-min(as.numeric(metadata$`Altitude.(masl)`))
-max(as.numeric(metadata$`Altitude.(masl)`))
-min(as.numeric(metadata$Longitude))
-min(as.numeric(metadata$Latitude))
-max(as.numeric(metadata$Latitude))
-min(as.numeric(metadata$Longitude))
-max(as.numeric(metadata$Longitude))
-
-#---- District 
+maxmins <- data.frame(altitude=c(min(as.numeric(metadata$`Altitude.(masl)`)), 
+                          max(as.numeric(metadata$`Altitude.(masl)`))),
+              longitude=c(min(as.numeric(metadata$Longitude)), 
+                          max(as.numeric(metadata$Longitude))),
+              latitude=c(min(as.numeric(metadata$Latitude)), 
+                         max(as.numeric(metadata$Latitude))))
+rownames(maxmins) <- c("min", "max")
+maxmins
 table(metadata$altzones)
 
 #####----- Elevation Map: Not Working
@@ -156,8 +159,7 @@ dat=ppv
 #   package Jost
 
 
-#------
-# Plot of mean contig length after removal of 50 nt
+#------ Plot of mean contig length after removal of 50 nt
 plot(dat$Length, log2(dat$RPKM),  col="black",
      xlab = "contig length", ylab = "log2(RPKM)")
 abline(v=50, col="red")
@@ -189,27 +191,36 @@ ggplot(dat, aes(x= factor(Genus), fill= Genus))+
   theme(strip.text.x = element_text(size = 18, colour = "1"))+
   coord_flip()
 
+#------ creating matrix 
+datall <- dat %>%
+         select(IDs, Family, Genus, Species, Acronym, Length_mean, Bases_mean,
+         Coverage_mean, Reads_mean, RPKM_mean, Frags_mean, FPKM_mean)
+  datball <- ddply(datall, .(IDs, Species), summarise, cov=mean(RPKM_mean))
+  datcall <- na.omit(datball)
+  datm <- tidyr::spread(datcall, IDs, cov,  drop=TRUE , fill = 0)
+  row.names(datm) = datm$Species
+datm = datm[-1]
 
 #------ subsampling by altitude
 zonas = c("hot land", "cold land", "frozen land")
-g.zonas = list()
- for (i in seq_along(alts)){
-i=1
-dat=alts[[i]]
-g.zonas[[1]] <- dat %>%
-  select(IDs, Family, Genus, Species, Acronym, Length_mean, Bases_mean,
-         Coverage_mean, Reads_mean, RPKM_mean, Frags_mean, FPKM_mean)
-datb <- ddply(data, .(IDs, Species), summarise, cov=mean(RPKM_mean))
-datc <- na.omit(datb)
-datm <- tidyr::spread(datc, IDs, cov,  drop=TRUE , fill = 0)
-row.names(datm) = datm$Species
-datm= datm[-1]
-dim(datm)
+mat.zonas = g.zonas = list()
+for (i in seq_along(alts)){
+  dat=alts[[i]]
+  g.zonas[[i]] <- dat %>%
+                  select(IDs, Family, Genus, Species, Acronym, Length_mean, Bases_mean,
+                         Coverage_mean, Reads_mean, RPKM_mean, Frags_mean, FPKM_mean)
+    datb <- ddply(g.zonas[[i]], .(IDs, Species), summarise, cov=mean(RPKM_mean))
+    datc <- na.omit(datb)
+    datm <- tidyr::spread(datc, IDs, cov,  drop=TRUE , fill = 0)
+    row.names(datm) = datm$Species
+  mat.zonas[[i]] = datm[-1]
+  dim(mat.zonas[[i]])
 }
 #--- Normalizationi
-print(paste("normalizing", zonas[i], "dataset", sep= " "))
-dat.mat <- datm/colSums(datm)*100
-dat.mat = round(dat.mat, digits = 0)
+# for (i in seq_along(alts)){
+  print(paste("normalizing", zonas[i], "dataset", sep= " "))
+    dat.mat <- datm/colSums(datm)*100
+    dat.mat = round(dat.mat, digits = 0)
 #--------------------------------------------------------------------------------------
 # Calculating metrics ## UNCOMMENT ALL THIS FOR BIPARTITE METRICS
 # Bipartite analysis
