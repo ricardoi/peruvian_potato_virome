@@ -285,10 +285,7 @@ alpha <- with(mtdt, tapply(specnumber(BCI), altzones, mean))
 gamma <- with(mtdt, specnumber(BCI, altzones))
 gamma/alpha - 1
 
-
-
-
-data("GlobalPatterns")
+#-----
 samp_dat <- ddply(metadata, .(CIP_Code, Department, Province, 
                          District, Localidad, altzones), 
                          summarise, Year=mean(as.numeric(Year.of.collection)))
@@ -304,21 +301,64 @@ colnames(datm) %in% samp_dat$CIP_Code
 
 samp_dat <- samp_dat[which(samp_dat$CIP_Code %in% colnames(datm)),]
 row.names(samp_dat) <- samp_dat$CIP_Code
-
+# row.names(metadata) <- metadata$Species
+rownames(dat.mat) %in% metadata$Species
 # Checking matrix dimensions, must be equal to 
 dim(dat.mat); dim(metadata); dim(samp_dat)
 
+data("GlobalPatterns")
 # GP <- prune_taxa(taxa_sums(GlobalPatterns) > 0, GlobalPatterns)
-# GlobalPatterns@sam_data
-ps <- phyloseq(otu_table(dat.mat, taxa_are_rows = T), taxa_names(metadata), 
+GlobalPatterns
+GlobalPatterns@sam_data
+GlobalPatterns@otu_table
+GlobalPatterns@sam_data
+GlobalPatterns@phy_tree
+GlobalPatterns@tax_table
+
+row.names(metadata) <- metadata[,3]
+TAX <- tax_table(as.matrix(metadata))
+ps <- phyloseq(otu_table(dat.mat, taxa_are_rows = T), tax_table(TAX), 
                sample_data(samp_dat))
-ps
+ps@tax_table
+
 # ps0 <- prune_taxa(taxa_sums(ps) > 0, ps)
 plot_richness(ps, measures=c("Observed", "Chao1", "Shannon","InvSimpson"))
 
 plot_richness(ps, x="altzones", measures=c("Observed", "Chao1", "Shannon","InvSimpson"))
 
 plot_richness(ps, x="altzones", color="Department", measures=c("Observed", "Chao1", "Shannon", "InvSimpson"))
+
+
+#------ Subssampling data 
+ps.rare <- rarecurve(t(otu_table(ps)), step=50, cex=0.5)
+# rarefatcion w/o replacement
+ps.rare = rarefy_even_depth(ps, rngseed=10, sample.size=0.9*min(sample_sums(ps)), replace=F)
+plot_bar(ps.rare, fill = "Family") + 
+  facet_wrap(~altzones, scales="free_x", nrow=1)
+
+ps.phylum = tax_glom(ps.rare, taxrank="Family", NArm=FALSE)
+
+plot_bar(ps.phylum, fill="Family") + 
+  facet_wrap(~altzones, scales= "free_x", nrow=1)
+
+
+plot_richness(ps.rare, x="altzones", color="Department", measures=c("Observed"))
+
+plot_richness(ps.rare, x="altzones", measures=c("Observed", "Shannon")) + 
+  geom_boxplot()
+
+# estimate richness
+rich = estimate_richness(ps.rare, , measures = c("Observed", "Shannon"))
+rich
+
+pairwise.wilcox.test(rich$Observed, sample_data(ps.rare)$altzones)
+
+
+# PCoA
+dist = phyloseq::distance(ps.rare, method="jsd", weighted=F)
+ord.PCoA = ordinate(ps.rare, method="PCoA", distance=dist)
+plot_ordination(ps.rare, ord.PCoA, color="") + 
+  theme(aspect.ratio=1)
 
 #-----------------------------------------------------------------------------------------------------------------
 # # Identify isolated nodes
