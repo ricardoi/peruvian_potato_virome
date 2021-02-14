@@ -4,7 +4,8 @@
 setwd("/Users/ricardoi/Dropbox (UFL)/Alcala_Briseno-Garrett/++Papa_virome/+papa/3-results/")
 
 #----- Loading libraries -------
-library(bipartiteD3)
+library(bipartite)
+# library(bipartiteD3)
 library(igraph)
 library(dplyr)
 library(plyr)
@@ -14,10 +15,10 @@ library(tidyr)
 library(openxlsx)
 library(ggplot2)
 
-if (!requireNamespace("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+  # install.packages("BiocManager")
 
-BiocManager::install("phyloseq")
+# BiocManager::install("phyloseq")
 # BiocManager::install("DESeq2")
 # devtools::install_github("slowkow/ggrepel", force = T)
 
@@ -197,10 +198,10 @@ datall <- dat %>%
          Coverage_mean, Reads_mean, RPKM_mean, Frags_mean, FPKM_mean)
   datball <- ddply(datall, .(IDs, Species), summarise, cov=mean(RPKM_mean))
   datcall <- na.omit(datball)
-  datm <- tidyr::spread(datcall, IDs, cov,  drop=TRUE , fill = 0)
+  datm <- tidyr::spread(datcall, IDs, cov,  drop=T , fill = 0)
   row.names(datm) = datm$Species
 datm = datm[-1]
-
+dim(datm)
 #------ subsampling by altitude
 zonas = c("hot land", "cold land", "frozen land")
 mat.zonas = g.zonas = list()
@@ -211,9 +212,9 @@ for (i in seq_along(alts)){
                          Coverage_mean, Reads_mean, RPKM_mean, Frags_mean, FPKM_mean)
     datb <- ddply(g.zonas[[i]], .(IDs, Species), summarise, cov=mean(RPKM_mean))
     datc <- na.omit(datb)
-    datm <- tidyr::spread(datc, IDs, cov,  drop=TRUE , fill = 0)
-    row.names(datm) = datm$Species
-  mat.zonas[[i]] = datm[-1]
+    datd <- tidyr::spread(datc, IDs, cov,  drop=TRUE , fill = 0)
+    row.names(datd) = datd$Species
+  mat.zonas[[i]] = datd[-1]
   dim(mat.zonas[[i]])
 }
 #--- Normalizationi
@@ -245,7 +246,7 @@ dev.off()
 pdf(paste0("Degree_distr_", zonas[i],".pdf"), width = 20, height = 20)
 degreedistr(dat.mat)
 dev.off()
-}
+# }
 
 #------- Degree distribution
 degreedistr(dat.mat)
@@ -256,7 +257,7 @@ visweb(sortweb(dat.mat,sort.order="inc"), type="diagonal", labsize=3,
 
 
 #------ Diversity indices
-library(vegan)
+# library(vegan)
 ## alpha diversity 
 # data(BCI) #example data
 BCI = t(dat.mat) # transposing and changing name 
@@ -288,22 +289,28 @@ gamma/alpha - 1
 
 
 data("GlobalPatterns")
-samp_dat <- ddply(dat, .(IDs, Department, Province, 
+samp_dat <- ddply(metadata, .(CIP_Code, Department, Province, 
                          District, Localidad, altzones), 
-                         summarise, length=mean(Length_mean))
+                         summarise, Year=mean(as.numeric(Year.of.collection)))
 rownames(samp_dat) <- samp_dat$IDs
-dat.x <- ddply(ppv, .(Family, Genus, Species), summarise, RPKM=mean(RPKM_mean))
-dat.x$Family <- gsub( "^ ", "", dat.x$Family) 
-dat.x$Genus <- gsub( "^ ", "", dat.x$Genus) 
-dat.x$Species <- gsub( "^ ", "", dat.x$Species) 
+metadata <- ddply(dat, .(Family, Genus, Species), summarise, RPKM=mean(RPKM_mean))
+metadata$Family <- gsub( "^ ", "", metadata$Family) 
+metadata$Genus <- gsub( "^ ", "", metadata$Genus) 
+metadata$Species <- gsub( "^ ", "", metadata$Species) 
 rownames(dat.mat) <- gsub( "^ ", "", rownames(dat.mat))
 
-rownames(dat.mat) %in% dat.x$Species
-colnames(dat.mat) %in% samp_dat$IDs
+rownames(datm) %in% metadata$Species
+colnames(datm) %in% samp_dat$CIP_Code
+
+samp_dat <- samp_dat[which(samp_dat$CIP_Code %in% colnames(datm)),]
+row.names(samp_dat) <- samp_dat$CIP_Code
+
+# Checking matrix dimensions, must be equal to 
+dim(dat.mat); dim(metadata); dim(samp_dat)
 
 # GP <- prune_taxa(taxa_sums(GlobalPatterns) > 0, GlobalPatterns)
-GlobalPatterns@sam_data
-ps <- phyloseq(otu_table(dat.mat, taxa_are_rows = T), taxa_names(dat.x), 
+# GlobalPatterns@sam_data
+ps <- phyloseq(otu_table(dat.mat, taxa_are_rows = T), taxa_names(metadata), 
                sample_data(samp_dat))
 ps
 # ps0 <- prune_taxa(taxa_sums(ps) > 0, ps)
