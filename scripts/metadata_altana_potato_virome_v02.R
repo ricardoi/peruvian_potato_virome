@@ -329,38 +329,48 @@ plot_richness(ps, x="altzones", measures=c("Observed", "Chao1", "Shannon","InvSi
 plot_richness(ps, x="altzones", color="Department", measures=c("Observed", "Chao1", "Shannon", "InvSimpson"))
 
 
-#------ Subssampling data 
+#------ Subssampling data using rarefaction
 ps.rare <- rarecurve(t(otu_table(ps)), step=50, cex=0.5)
 # rarefatcion w/o replacement
-ps.rare = rarefy_even_depth(ps, rngseed=10, sample.size=0.9*min(sample_sums(ps)), replace=F)
-plot_bar(ps.rare, fill = "Family") + 
+ps.rare = rarefy_even_depth(ps, rngseed=10, sample.size=0.9*min(sample_sums(ps)), 
+                            trimOTUs= 1, replace=F)
+
+#------- plot abundances by taxa
+plot_bar(ps, fill = "Family") + 
   facet_wrap(~altzones, scales="free_x", nrow=1)
 
-ps.phylum = tax_glom(ps.rare, taxrank="Family", NArm=FALSE)
+ps.phylum = tax_glom(ps, taxrank="Family", NArm=T)
 
 plot_bar(ps.phylum, fill="Family") + 
   facet_wrap(~altzones, scales= "free_x", nrow=1)
 
+#----- plotting richness for ps (phyloseq) object with ppv data
 
-plot_richness(ps.rare, x="altzones", color="Department", measures=c("Observed"))
+plot_richness(ps, x="altzones", color="Department", 
+              measures=c("Observed", "Chao1", "ACE", "Shannon", "Simpson",
+                         "InvSimpson", "Fisher"))
 
-plot_richness(ps.rare, x="altzones", measures=c("Observed", "Shannon")) + 
-  geom_boxplot(aes(fill=altzones))+
+plot_richness(ps, x="altzones", measures=c("Observed", "Shannon")) + 
+  geom_violin(aes(fill=altzones))+
+  scale_x_discrete(limits=c("hotland","coldland","frozenland"))+
+  scale_fill_manual(values=c("#006400", "#FFE557", "#BF8F00"))+
   theme_bw()
 
 # estimate richness
-rich = estimate_richness(ps.rare, , measures = c("Observed", "Shannon"))
+rich = estimate_richness(ps, measures = c("Observed", "Shannon"))
 rich
 
 pairwise.wilcox.test(rich$Shannon, sample_data(ps.rare)$altzones, 
                      p.adj = "bonf")
 
-#----------
-# PCoA
-dist = phyloseq::distance(ps.rare, method="jsd", weighted=F)
-ord.PCoA = ordinate(ps.rare, method="PCoA", distance=dist)
-plot_ordination(ps.rare, ord.PCoA, color="altzones") + 
-  theme(aspect.ratio=1)
+#------- Ordination method: NMDS
+dist = phyloseq::distance(ps, method="jsd", weighted=T)
+dist[1:5]
+ord.NMDS = ordinate(ps, "NMDS", distance=dist)
+plot_ordination(ps, ord.NMDS, color="altzones") + 
+  theme(aspect.ratio=1)+ 
+  scale_color_manual(values=c("#006400", "#FFE557", "#BF8F00"))+
+  theme_bw()
 
 # PERMANOVA
 adonis(dist ~ sample_data(ps.rare)$altzones)
