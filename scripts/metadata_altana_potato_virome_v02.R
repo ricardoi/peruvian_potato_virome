@@ -131,26 +131,12 @@ table(metadata$altzones)
 }
 #####
 #---- Peruvian Potato Virome
-# 
-# papa1 <- read.xlsx("data/CIP/3_Potato_viroma_all_libaries_completed_Results_mod5.xlsx", sheet=1, startRow = 3)
-# papa1[1:5,1:15]
-# papa2 <- read.xlsx("data/CIP/3_Potato_viroma_all_libaries_completed_Results_mod5.xlsx", sheet=2)
-# papa2[1:5,1:15]
-# ncol(papa1) == ncol(papa2)
-# metadata2 <- rbind(papa1, papa2) %>% 
-#                 select("Library", "Place", "field", "Sample_code") 
-# md <- ddply(metadata2, .(Library, Place, Sample_code), summarise, cov=mean(as.numeric(field)))
-# metadata$CIP_Code %in% md$Sample_code
-
 peruvian_potato_virome <- read.csv("peruvian_potato_virome_vsc-rpkmx_ViNAtq_Feb11.csv")[-1]
 ppv = peruvian_potato_virome
 
 ppv[1:5,1:5]
 dim(ppv)
 dat=ppv
-
-# dat.x <- ddply(ppv, .(IDs, Species), summarise, RPKM=mean(RPKM_mean))
-# head(dat.x)
 
 #--------------- NOTES --------------
 # Altitude and latitude change b-diversity very high 
@@ -165,7 +151,7 @@ plot(dat$Length, log2(dat$RPKM),  col="black",
 abline(v=50, col="red")
 title("Normalized log2(RPKM) and length\n
       (thr = all)")
-
+dat$RPKMlog2 <- log2(dat$RPKM_mean)
 #------ stacking the three altitudinals gradients
 alts <- list(nhl <- dat[dat$IDs %in% hl$CIP_Code,],
              ncl <- dat[dat$IDs %in% cl$CIP_Code,],
@@ -194,7 +180,7 @@ ggplot(dat, aes(x= factor(Genus), fill= Genus))+
 #------ creating matrix 
 datall <- dat %>%
          select(IDs, Family, Genus, Species, Acronym, Length_mean, Bases_mean,
-         Coverage_mean, Reads_mean, RPKM_mean, Frags_mean, FPKM_mean)
+         Coverage_mean, Reads_mean, RPKM_mean, RPKMlog2,  Frags_mean, FPKM_mean)
   datball <- ddply(datall, .(IDs, Species), summarise, cov=mean(RPKM_mean))
   datcall <- na.omit(datball)
   datm <- tidyr::spread(datcall, IDs, cov,  drop=T , fill = 0)
@@ -208,7 +194,7 @@ for (i in seq_along(alts)){
   dat=alts[[i]]
   g.zonas[[i]] <- dat %>%
                   select(IDs, Family, Genus, Species, Acronym, Length_mean, Bases_mean,
-                         Coverage_mean, Reads_mean, RPKM_mean, Frags_mean, FPKM_mean)
+                         Coverage_mean, Reads_mean, RPKM_mean, RPKMlog2, Frags_mean, FPKM_mean)
     datb <- ddply(g.zonas[[i]], .(IDs, Species), summarise, cov=mean(RPKM_mean))
     datc <- na.omit(datb)
     datd <- tidyr::spread(datc, IDs, cov,  drop=TRUE , fill = 0)
@@ -216,13 +202,25 @@ for (i in seq_along(alts)){
   mat.zonas[[i]] = datd[-1]
   dim(mat.zonas[[i]])
 }
+
+
 #--- Normalizationi
 # for (i in seq_along(alts)){
-  print(paste("normalizing", zonas[i], "dataset", sep= " "))
+  print(paste("normalizing", "ALL", "dataset", sep= " ")) #zonas[i]
     dat.mat <- datm/colSums(datm)*100
     dat.mat = round(dat.mat, digits = 0)
     # dat.mat <- dat.mat[ , rowSums(dat.mat) > 10]
-    # dat.mat[1:5,1:5]
+    dat.mat[1:5,1:5]
+    
+# #---- pseudocounts
+#     dat.tot <- apply(datm, 2, sum)
+#     dat.fac <- dat.tot/mean(dat.tot)
+#     for (i in 1:ncol(datm)){
+#     aver[,i] <- log2((10+datm[,1])/(10+sum(dat.fac[1])))
+#     }
+# dat.mat = round(aver, digits = 0)
+# aver[1:5, 1:5]    
+# dim(dat.mat)
 #--------------------------------------------------------------------------------------
 # Calculating metrics ## UNCOMMENT ALL THIS FOR BIPARTITE METRICS
 # Bipartite analysis
@@ -250,6 +248,7 @@ dev.off()
 # }
 
 #------- Degree distribution
+# here does not need to be RPKM log2
 degreedistr(dat.mat)
 nested(dat.mat, method="wine")
 #rarest species first:
@@ -261,20 +260,25 @@ visweb(sortweb(dat.mat,sort.order="inc"), type="diagonal", labsize=3,
 ## alpha diversity 
 # data(BCI) #example data
 BCI = t(dat.mat) # transposing and changing name 
-H <- vegan::diversity(BCI)
-simp <- vegan::diversity(BCI, "simpson")
-invsimp <- vegan::diversity(BCI, "inv")
-## Unbiased Simpson (Hurlbert 1971, eq. 5) with rarefy:
-unbias.simp <- rarefy(BCI, 1) - 1
-## Fisher alpha
-alpha <- fisher.alpha(BCI)
+print("H index")
+(H <- vegan::diversity(BCI))
+print("Simpson")
+(simp <- vegan::diversity(BCI, "simpson"))
+print("inverse Simpson")
+(invsimp <- vegan::diversity(BCI, "inv"))
+print("Unbiased Simpson (Hurlbert 1971, eq. 5) with rarefy")
+(unbias.simp <- rarefy(BCI, 1) - 1)
+print("Fisher alpha")
+(alpha <- fisher.alpha(BCI))
 # a1 <- fisherfit(BCI[1,])
 # estimate_richness(BCI, measures="Observed")
 
 ## Plot all
 pairs(cbind(H, simp, invsimp, unbias.simp, alpha), pch="+", col="blue")
-## Species richness (S) and Pielou's evenness (J):
+# Species richness and evennes
+print("Species richness (S)") 
 (S <- specnumber(BCI)) ## rowSums(BCI > 0) does the same...
+print("Pielou's evenness (J)")
 (J <- H/log(S))
 
 ## beta diversity defined as gamma/alpha - 1:
@@ -306,14 +310,13 @@ rownames(dat.mat) %in% metadata$Species
 # Checking matrix dimensions, must be equal to 
 dim(dat.mat); dim(metadata); dim(samp_dat)
 
-data("GlobalPatterns")
+# data("GlobalPatterns")
 # GP <- prune_taxa(taxa_sums(GlobalPatterns) > 0, GlobalPatterns)
-GlobalPatterns
-GlobalPatterns@sam_data
-GlobalPatterns@otu_table
-GlobalPatterns@sam_data
-GlobalPatterns@phy_tree
-GlobalPatterns@tax_table
+# GlobalPatterns@sam_data 
+# GlobalPatterns@otu_table
+# GlobalPatterns@sam_data
+# GlobalPatterns@phy_tree
+# GlobalPatterns@tax_table
 
 row.names(metadata) <- metadata[,3]
 TAX <- tax_table(as.matrix(metadata))
@@ -350,12 +353,13 @@ plot_richness(ps, x="altzones", color="Department",
               measures=c("Observed", "Chao1", "ACE", "Shannon", "Simpson",
                          "InvSimpson", "Fisher"))
 
+pdf("ppv_observed-Shannon_altitudinalgradient.pdf",height = 10, width = 20)
 plot_richness(ps, x="altzones", measures=c("Observed", "Shannon")) + 
-  geom_violin(aes(fill=altzones))+
+  geom_violin(aes(fill=altzones), alpha=0.5)+
   scale_x_discrete(limits=c("hotland","coldland","frozenland"))+
-  scale_fill_manual(values=c("#006400", "#FFE557", "#BF8F00"))+
+  scale_fill_manual(values=c("#FFE557", "#BF8F00", "#006400"))+
   theme_bw()
-
+dev.off()
 # estimate richness
 rich = estimate_richness(ps, measures = c("Observed", "Shannon"))
 rich
@@ -364,11 +368,12 @@ pairwise.wilcox.test(rich$Shannon, sample_data(ps.rare)$altzones,
                      p.adj = "bonf")
 
 #------- Ordination method: NMDS
-dist = phyloseq::distance(ps, method="jsd", weighted=T)
+dist = phyloseq::distance(ps, method="jsd")#, weighted=F)
 dist[1:5]
 ord.NMDS = ordinate(ps, "NMDS", distance=dist)
 plot_ordination(ps, ord.NMDS, color="altzones") + 
-  theme(aspect.ratio=1)+ 
+  geom_point(shape=1, size = 5)+
+  theme(aspect.ratio=4)+ 
   scale_color_manual(values=c("#006400", "#FFE557", "#BF8F00"))+
   theme_bw()
 
