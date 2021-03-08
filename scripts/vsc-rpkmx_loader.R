@@ -1,4 +1,14 @@
-setwd("/Users/ricardoi/Dropbox (UFL)/Alcala_Briseno-Garrett/++Papa_virome/+papa/3-results/vsc-rpkmx")
+#'@title:  "rpkms-x-vsc loader"
+#'@author: "R Alcala"
+#'@date:   "15/02/2021"
+#'@output: "rpkmsx-vsc merged"
+#'
+unlink(".RData")
+
+library(plyr)
+
+#--------
+setwd("/Users/ricardoi/Dropbox (UFL)/Alcala_Briseno-Garrett/+++Sweetpotato_virome/+Sweetpotato_virome/rpkm_resultsFeb2/")
 
 
 files = list.files(pattern="*.csv")
@@ -12,10 +22,11 @@ for (i in seq_along(files)){
 }
 ls[[1]]
 
-peruvian_potato_virome <- rbind.fill(ls) 
+# add name
+sweetpotato_virome <- rbind.fill(ls) 
 
 
-write.csv(peruvian_potato_virome, "peruvian_potato_virome_vsc-rpkmx_ViNAtq_Feb11.csv")
+write.csv(sweetpotato_virome, "sweetpotato_virome_vsc-rpkmx_ViNAtq_Feb24.csv")
 
 ppv= peruvian_potato_virome
 # how to read all csv's 
