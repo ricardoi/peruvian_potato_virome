@@ -72,7 +72,7 @@ bioclim <- paste0("BIO", 1:19)
 tmin = tmax = tavg = prec = srad = wind = vapr = bio = elev = list()
 
 # tmin
-dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_tmin/")
+dirs <- list.dirs("1-data/climatic_data/climdat_30s/")
 tmins = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
 for (t in seq_along(tmins)){
   tmin[[t]] <- raster(tmins[[t]])
@@ -81,7 +81,7 @@ tmins <- raster::stack(tmin[1], tmin[2], tmin[3], tmin[4], tmin[5], tmin[6],
                        tmin[7], tmin[8], tmin[9], tmin[10], tmin[11], tmin[12])
 
 # tmax
-dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_tmax/")
+#dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_tmax/")
 tmaxs = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
 for (t in seq_along(tmaxs)){
   tmax[[t]] <- raster(tmaxs[[t]])
@@ -89,7 +89,7 @@ for (t in seq_along(tmaxs)){
 tmaxs <- raster::stack(tmax[1], tmax[2], tmax[3], tmax[4], tmax[5], tmax[6], 
                        tmax[7], tmax[8], tmax[9], tmax[10], tmax[11], tmax[12])
 # tavg
-dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_tavg/")
+#dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_tavg/")
 tavgs = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
 for (t in seq_along(tavgs)){
   tavg[[t]] <- raster(tavgs[[t]])
@@ -97,7 +97,7 @@ for (t in seq_along(tavgs)){
 tavgs <- raster::stack(tavg[1], tavg[2], tavg[3], tavg[4], tavg[5], tavg[6], 
                        tavg[7], tavg[8], tavg[9], tavg[10], tavg[11], tavg[12])
 # prec
-dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_prec/")
+# dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_prec/")
 precs = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
 for (t in seq_along(precs)){
   prec[[t]] <- raster(precs[[t]])
@@ -105,7 +105,7 @@ for (t in seq_along(precs)){
 precs <- raster::stack(prec[1], prec[2], prec[3], prec[4], prec[5], prec[6], 
                        prec[7], prec[8], prec[9], prec[10], prec[11], prec[12])
 # srad
-dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_srad/")
+# dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_srad/")
 srads = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
 for (t in seq_along(srads)){
   srad[[t]] <- raster(srads[[t]])
@@ -113,7 +113,7 @@ for (t in seq_along(srads)){
 srads <- raster::stack(srad[1], srad[2], srad[3], srad[4], srad[5], srad[6], 
                        srad[7], srad[8], srad[9], srad[10], srad[11], srad[12])
 # wind
-dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_wind/")
+#dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_wind/")
 winds = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
 for (t in seq_along(winds)){
   wind[[t]] <- raster(winds[[t]])
@@ -121,7 +121,7 @@ for (t in seq_along(winds)){
 winds <- raster::stack(wind[1], wind[2], wind[3], wind[4], wind[5], wind[6], 
                        wind[7], wind[8], wind[9], wind[10], wind[11], wind[12])
 # vapr
-dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_vapr/")
+# dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_vapr/")
 vaprs = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
 for (t in seq_along(vaprs)){
   vapr[[t]] <- raster(vaprs[[t]])
@@ -130,7 +130,7 @@ vaprs <- raster::stack(vapr[1], vapr[2], vapr[3], vapr[4], vapr[5], vapr[6],
                        vapr[7], vapr[8], vapr[9], vapr[10], vapr[11], vapr[12])
 #---- BIOCLIM
 # bio
-dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_bio/")
+# dirs <- list.dirs("1-data/climatic_data/climdat_30s/")
 bios = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
 for (t in seq_along(bios)){
   bio[[t]] <- raster(bios[[t]])
@@ -140,7 +140,7 @@ bios <- raster::stack(bio[1], bio[2], bio[3], bio[4], bio[5], bio[6],
                       bio[13], bio[14], bio[15], bio[16], bio[17], bio[18],
                       bio[19])
 # elev
-dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_elev/")
+#dirs <- list.dirs("6-spatial_analysis/WorldClim_v2.1/wc2.1_30s_elev/")
 elevs = list.files(dirs, pattern="*.tif", full.names = T, all.files = T)
 for (t in seq_along(elevs)){
   elev[[t]] <- raster(elevs[[t]])
@@ -176,9 +176,29 @@ extractedVIF <- raster::extract(all.vars, ppv[,1:2])
 vifcor(extractedVIF,th=0.95)
 
 # remove hightly coorelated variables
-VIFvars <- vifstep(extractedVIF, th = 60)
+VIFvars <- vifstep(extractedVIF, th = 90)
 
 ### now create a new stack with just the reduced set of predictors 
+
+# After excluding the collinear variables, the linear correlation coefficients ranges between: 
+# min correlation ( wc2.1_30s_bio_2.8 ~ wc2.1_30s_bio_15.8 ):  0.3842801 
+# max correlation ( wc2.1_30s_bio_18.8 ~ wc2.1_30s_bio_17.8 ): 0.944365 
+# 
+# ---------- VIFs of the remained variables -------- 
+#   Variables       VIF
+# 1  wc2.1_30s_bio_14.1       NaN
+# 2  wc2.1_30s_bio_14.2       NaN
+# 3  wc2.1_30s_bio_14.3       NaN
+# 4  wc2.1_30s_bio_14.4       NaN
+# 5  wc2.1_30s_bio_14.5       NaN
+# 6  wc2.1_30s_bio_14.6       NaN
+# 7  wc2.1_30s_bio_14.7       NaN
+# 8  wc2.1_30s_bio_14.8       NaN
+# 9  wc2.1_30s_bio_15.8  6.824133
+# 10 wc2.1_30s_bio_17.8 15.263018
+# 11 wc2.1_30s_bio_18.8 14.779792
+# 12 wc2.1_30s_bio_19.8 10.135964
+# 13  wc2.1_30s_bio_2.8  2.678956
 
 #Could be something like: 
 
