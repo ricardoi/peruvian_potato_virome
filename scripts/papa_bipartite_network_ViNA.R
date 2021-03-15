@@ -4,7 +4,7 @@
 #'@output: "Metadata"
 #'
 unlink(".RData")
-setwd("../../Dropbox (UFL)/Alcala_Briseno-Garrett/++Papa_virome/+papa/3-results/")
+setwd("~/Dropbox (UFL)/Alcala_Briseno-Garrett/++Papa_virome/+papa/3-results/")
 #---- Libraries ----
 library(plyr)
 library(dplyr)
@@ -19,6 +19,8 @@ library(vegan)
 library(iNEXT)
 library(tictoc)
 library(gridExtra)
+library(openxlsx)
+
 
 #----- loading arguments 
 #---------- Setting working directory ---------- 
@@ -48,11 +50,11 @@ tic("Total time computed")
   
 
   meta <-metadata[c("CIP_Code", "Department", "Province", "Localidad",
-           "Latitude", "Longitude", "Altitude.(masl)", "Tama??o.campo.(m2)",
+           "Latitude", "Longitude", "Altitude.(masl)", "Tamaño.campo.(m2)",
             "Cultivar/.especie","Origen.de.semilla", "altzones")]
   
   #---- Peruvian Potato Virome
-peruvian_potato_virome <- read.csv("peruvian_potato_virome_vsc-rpkmx_ViNAtq_ed_Mar14.csv", 
+peruvian_potato_virome <- read.csv("peruvian_potato_virome_vsc-rpkmx_ViNAtq_ed_Mar15.csv", 
                                    stringsAsFactors = F)[-1]
 virome = merge(peruvian_potato_virome, meta[c("CIP_Code","Altitude.(masl)","altzones")], 
                 by.x="IDs", by.y="CIP_Code")
@@ -84,8 +86,51 @@ cond2= as.numeric(virome$Length_mean) < 50
 
 virome2 <- virome[cond1,]
 kvina2 <- virome[cond2,]
+}
+toc()
+#-------- Taxonomic plot
+tic()
+library(alluvial)
+library(tidyverse)
+library(reshape2)
+# subsetting table
+datc <- virome2 %>%
+  select(Realm, Family, Genus, pSpecies, Acronym, altzones, RPKM_mean)
+head(datc)
 
+# adding colors
+library(wesanderson)
 
+RbPal <- viridis(c(length(unique(datc$Family))+40), option = "inferno")
+# RbPal <- wes_palette("Zissou1", 100, type = "continuous")
+datc <- datc %>%
+  mutate( ss = paste(Family, Genus),
+          cols = RbPal[ match(ss, sort(unique(ss))) ] 
+  )
+# alluvla plot 
+
+plot(sort(table(datc$Family), decreasing = T), col="blue",las =2, cex = 2, lwd = 6)
+plot(sort(table(datc$Genus), decreasing = T), col="blue",las =2, cex = 2, lwd = 6)
+# plot(sort(table(datc$Acronym), decreasing = T), col="blue",las =2, cex = .5, lwd = 4)
+# 
+# ggplot(datc, aes(Genus))+
+#   geom_bar()
+
+counts <- datc[which(datc$Genus == "Torradovirus"),]
+unique(counts$pSpecies)
+
+alluvial(datc[,c(1,2,3,5)], freq=datc$RPKM_mean,
+         #hide = datc$length == 0,
+         col = datc$cols,
+         border = datc$cols, 
+         alpha = 0.7,
+         blocks = FALSE,
+         ordering = list(NULL, NULL,NULL, order(as.factor(datc$Realm))), 
+         # change NULL to order them
+         cex =0.8
+)
+
+#---------------
 # Plot of mean contig length after removal of 50 nt
 pdf(paste0("papa","-nornRPKM-length",format(Sys.time(), "%b%d"), ".pdf"),
     width = 15, # The width of the plot in inches
@@ -101,7 +146,7 @@ points(kvina2$Length_mean, log2(kvina2$RPKM_mean), col="red", pch = 1)
 title("Normalized mean \n RPKM and length \n
       (thr > 50 nt)")
 dev.off()
-}
+
 toc()
 
 zones <- unique(virome$altzones)
@@ -185,7 +230,7 @@ dim(dat.mat)
 tic("Network metrics")
 print("Processing network metrics")
 dimdatb.net.table <- networklevel(dat.mat)
-write.table(dimdatb.net.table, paste0("zone::", zones[z],"_network-metrics.tbl"), sep = ",")
+write.table(dimdatb.net.table, paste0("papa-", zones[z],"_network-metrics.tbl"), sep = ",")
 toc()
 tic("Node metrics")
 print("Processing node metrics")
