@@ -34,6 +34,8 @@ tic("Total time computed")
   metadata <- metadata %>% select_if(~!all(is.na(.)))
   metadata
   
+unique(metadata$Localidad)
+  
   length(metadata$`Altitude.(masl)`)
   hl <- metadata[which(metadata$`Altitude.(masl)` < 1000),] # hot land Hoehen index
   hls<- c(table(hl$Department), Total= sum(table(hl$Department)))
@@ -107,7 +109,7 @@ datc <- datc %>%
   mutate( ss = paste(Family, Genus),
           cols = RbPal[ match(ss, sort(unique(ss))) ] 
   )
-# alluvla plot 
+#----- Taxa Alluvla Plot 
 
 plot(sort(table(datc$Family), decreasing = T), col="blue",las =2, cex = 2, lwd = 6)
 plot(sort(table(datc$Genus), decreasing = T), col="blue",las =2, cex = 2, lwd = 6)
@@ -132,9 +134,9 @@ alluvial(datc[,c(1,2,3,5)], freq=datc$RPKM_mean,
 
 #---------------
 # Plot of mean contig length after removal of 50 nt
-pdf(paste0("papa","-nornRPKM-length",format(Sys.time(), "%b%d"), ".pdf"),
-    width = 15, # The width of the plot in inches
-    height = 15) # The height of the plot in inches
+# pdf(paste0("papa","-nornRPKM-length",format(Sys.time(), "%b%d"), ".pdf"),
+#     width = 15, # The width of the plot in inches
+#     height = 15) # The height of the plot in inches
 par(mfrow=c(1,2))
 plot(virome$Length_mean, log2(virome$RPKM_mean),  col="black",
      xlab = "contig length", ylab = "log(mean RPKM)")
@@ -145,7 +147,7 @@ plot(virome2$Length_mean, log2(virome2$RPKM_mean),  col="black", pch = 3,
 points(kvina2$Length_mean, log2(kvina2$RPKM_mean), col="red", pch = 1)
 title("Normalized mean \n RPKM and length \n
       (thr > 50 nt)")
-dev.off()
+# dev.off()
 
 toc()
 
@@ -164,19 +166,34 @@ k1meta <- meta[which(meta$altzones == zones[z]),]
 # k1meta = meta # This line is to compute the full network ## Comment always 
 k1meta <- k1meta[which(k1meta$SampleID %in% unique(k1vina$IDs)),]
 head(k1vina)
-k1vina.att <- ddply(k1vina, .(Acronym, IDs), summarise, Coverage=mean(RPKM_mean))
-k1vina.m <- tidyr::spread(k1vina.att, IDs, Coverage,  drop=TRUE , fill = 0)
+
+#subset >10
+k1vina.10 <- k1vina[which(k1vina$Bases_mean > 0),]
+
+ggplot(data = k1vina.10, aes(x = altzones, y = log2(Coverage_mean)))+
+  geom_boxplot()+
+  # stat_summary(fun.data=mean_sdl, geom="pointrange", color="red")+
+  geom_jitter(shape=1, aes(colour = Realm), alpha = 0.2)+
+  theme_classic()
+
+k1vina.att <- ddply(k1vina.10, .(Acronym, altzones), summarise, Coverage=mean(RPKM_mean))
+k1vina.m <- tidyr::spread(k1vina.att, altzones, Coverage,  drop=TRUE , fill = 0)
 rownames(k1vina.m) <- k1vina.m$Acronym
 datm <- k1vina.m[-c(1)]
 n=length(datm)
 paste("MESSAGE:: The lenght of the sample locations is ", length(datm), " and the data matrix is ", n,
-      ", then dimesions are equal? A = ", length(unique(k1vina$IDs)) == length(datm), sep = "")
+      ", then dimesions are equal? The answer is ", length(unique(k1vina$IDs)) == length(datm), sep = "")
 
-#--- Normalizationi
+#--- Normalization
 print(paste("normalizing dataset", zones[z]))
-dat.mat <- datm/colSums(datm)*100
+dat.mat <- datm#/colSums(datm)*100
 dat.mat = round(dat.mat, digits = 0)
 dim(dat.mat)
+dat.mat
+
+dat.mat.log <- log2(dat.mat)
+dat.mat.log[dat.mat.log==-Inf] <- 0
+boxplot(dat.mat.log)
 
 
 #------- Bipartite networks -------
@@ -185,13 +202,16 @@ print("Bipartite Network Analsysis began ... this may take a while")
 pdf(paste0(zones[z],"_bipartitenetwork_",format(Sys.time(), "%b%d"), ".pdf"),
     width = 15, # The width of the plot in inches
     height = 15) # The height of the plot in inches
-plotweb(sortweb(dat.mat, sort.order="inc"), method="normal")   
+# plot
+plotweb(sortweb(dat.mat.log, sort.order="inc"), method="cca", abuns.type="additional",
+        col.interaction="gray", text.low.col="gray1", text.rot=90)   
+
 dev.off()
 #pdf(paste0(k,"-kcluster_matrixnetwork",format(Sys.time(), "%b%d"), ".pdf"),
 #    width = 15, # The width of the plot in inches
 #    height = 15) # The height of the plot in inches
-#visweb(sortweb(dat.mat,sort.order="inc"), type="diagonal", labsize=3,
-#       square="interaction", text="none", textsize = 4,circles=FALSE, frame=FALSE)# 
+visweb(sortweb(dat.mat,sort.order="inc"), type="diagonal", labsize=3,
+       square="interaction", text="none", textsize = 4,circles=FALSE, frame=FALSE)# 
 #dev.off()
 # dat.mat0 = ifelse(dat.mat > 1, 0, 1)
 
@@ -221,7 +241,7 @@ pdf(paste0(zones[z],"_incidence_w+b", format(Sys.time(), "%b%d"), ".pdf"),
 grid.arrange(plot1, plot2, ncol=2)
 dev.off()
 
-dat.df = dat.df[dat.df$count > 50,]
+dat.df = dat.df[dat.df$count > 0,]
 dat.mat <- dat.mat[rownames(dat.mat) %in% dat.df$Species,]
 dim(dat.mat)
 
@@ -230,22 +250,22 @@ dim(dat.mat)
 tic("Network metrics")
 print("Processing network metrics")
 dimdatb.net.table <- networklevel(dat.mat)
-write.table(dimdatb.net.table, paste0("papa-", zones[z],"_network-metrics.tbl"), sep = ",")
+write.table(dimdatb.net.table, paste0("papa-", zones[z],"_network-metrics.tbl", format(Sys.time(), "%b%d")), sep = ",")
 toc()
 tic("Node metrics")
 print("Processing node metrics")
 datb.sp.table  <- specieslevel(dat.mat)
 nodelev1 <- as.data.frame(datb.sp.table$`higher level`)
 nodelev2 <- as.data.frame(datb.sp.table$`lower level`)
-write.table(nodelev1, paste0("papa",zones[z],"_node-metrics_hl.tbl"))
-write.table(nodelev2, paste0("papa",zones[z],"_node-metrics_ll.tbl"))
+write.table(nodelev1, paste0("papa", zones[z],format(Sys.time(), "%b%d"),"_node-metrics_hl.tbl"))
+write.table(nodelev2, paste0("papa", zones[z],format(Sys.time(), "%b%d"),"_node-metrics_ll.tbl"))
 toc()
 # tic("Nestedness")
 # datb.nest.table <- nestedcontribution(dat.mat)
 # toc()
 #------- graph
 dat.mat <- dat.mat[which(rownames(dat.mat) %in% rownames(datb.sp.table$`lower level`)),]
-write.table(dat.mat, paste0("papa",zones[z],"_data_matrix.tbl"))
+write.table(dat.mat, paste0("papa","zones[z]", format(Sys.time(), "%b%d"),"_data_matrix.tbl"))
 tic("Plotting graph")
 print("Creating graph")
 virome <-  graph.incidence(dat.mat, weighted=T)
@@ -286,9 +306,8 @@ pdf(paste0(zones[z],"_bipartitenetwork-kk_",format(Sys.time(), "%b%d"), ".pdf"),
     width = 15, # The width of the plot in inches
     height = 15) # The height of the plot in inches
 plot(virome, edge.arrow.size=1, vertex.shape=shapes, vertex.size=V(virome)$width , 
-
           vertex.label.cex=1, vertex.label.color='black', vertex.frame.color="gray", 
-     vertex.frame.color="gold",   edge.curved=F,  layout=layout_with_mds(virome)) 
+     vertex.frame.color="gold",   edge.curved=F,  layout=layout_with_dh(virome)) 
 
 # dim = 3, maxiter = vcount(virome)*10)) # maxiter=500 ,fineiter = 500, cool.fact=0.80, weight.edge.crossings = 1 - sqrt(edge_density(virome))))
 # legend(x=-1.3, y=1.1, legend[,2], pch=21,
