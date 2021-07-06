@@ -152,7 +152,7 @@ title("Normalized mean \n RPKM and length \n
 toc()
 
 zones <- unique(virome$altzones)
-z=1 # 1 to 2 or 3
+z=2 # 1 to 2 or 3
 zones[z]
 #--------------------------------------
 # make an elseif statment to choose cluster number if specified, or full otherwise 
@@ -170,14 +170,20 @@ head(k1vina)
 #subset >10
 k1vina.10 <- k1vina[which(k1vina$Bases_mean > 0),]
 
-ggplot(data = k1vina.10, aes(x = altzones, y = log2(Coverage_mean)))+
+pdf(paste0("PPV_", zones[z], "_RPKM_Genus_boxplot",format(Sys.time(), "%b%d"), ".pdf"),
+    width = 18, # The width of the plot in inches
+    height = 10) # The height of the plot in inches
+ggplot(data = k1vina.10, aes(x = Genus, y = log2(Coverage_mean)))+
   geom_boxplot()+
   # stat_summary(fun.data=mean_sdl, geom="pointrange", color="red")+
   geom_jitter(shape=1, aes(colour = Realm), alpha = 0.2)+
-  theme_classic()
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+dev.off()
 
-k1vina.att <- ddply(k1vina.10, .(Acronym, altzones), summarise, Coverage=mean(RPKM_mean))
-k1vina.m <- tidyr::spread(k1vina.att, altzones, Coverage,  drop=TRUE , fill = 0)
+#--
+k1vina.att <- ddply(k1vina.10, .(Acronym, IDs), summarise, Coverage=mean(RPKM_mean))
+k1vina.m <- tidyr::spread(k1vina.att, IDs, Coverage,  drop=TRUE , fill = 0)
 rownames(k1vina.m) <- k1vina.m$Acronym
 datm <- k1vina.m[-c(1)]
 n=length(datm)
@@ -281,7 +287,7 @@ V(virome)$name <- c(V(virome)$name[1:length(V(virome)$type[V(virome)$type == "FA
 
 V(virome)$color <-  c(rep("#FFFB95", length(V(virome)$type[V(virome)$type == "FALSE"])), rep("#92C5FC", length(V(virome)$type[V(virome)$type == "TRUE"])))
 V(virome)$xx <- log(snodes$Coverage) # coverage size
-V(virome)$width <- c((datb.sp.table$`lower level`$species.strength)+6, log(datb.sp.table$`higher level`$degree)+2)
+V(virome)$width <- c((datb.sp.table$`lower level`$species.strength)+6, (dim(dat.mat)[2]/(datb.sp.table$`higher level`$degree)*2))
 show_col(unique(V(virome)$color))
 # 
 submeta <- meta[which(meta$SampleID %in% colnames(dat.mat)),]
@@ -302,12 +308,12 @@ show_col(unique(E(virome)$color))
 # E(virome)$color <- rbPal(10)[as.numeric(cut(E(virome)$width, breaks = 10))]
 shapes = c(rep("circle", length(V(virome)$type[V(virome)$type == "FALSE"])), rep("square", length(V(virome)$type[V(virome)$type == "TRUE"])))
 # # Network
-pdf(paste0(zones[z],"_bipartitenetwork-kk_",format(Sys.time(), "%b%d"), ".pdf"),
+pdf(paste0(zones[z],"_bipartitenetwork-mds_",format(Sys.time(), "%b%d"), ".pdf"),
     width = 15, # The width of the plot in inches
     height = 15) # The height of the plot in inches
 plot(virome, edge.arrow.size=1, vertex.shape=shapes, vertex.size=V(virome)$width , 
           vertex.label.cex=1, vertex.label.color='black', vertex.frame.color="gray", 
-     vertex.frame.color="gold",   edge.curved=F,  layout=layout_with_dh(virome)) 
+     vertex.frame.color="gold",   edge.curved=F,  layout=layout_with_mds(virome)) 
 
 # dim = 3, maxiter = vcount(virome)*10)) # maxiter=500 ,fineiter = 500, cool.fact=0.80, weight.edge.crossings = 1 - sqrt(edge_density(virome))))
 # legend(x=-1.3, y=1.1, legend[,2], pch=21,
