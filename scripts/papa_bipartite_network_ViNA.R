@@ -152,7 +152,7 @@ title("Normalized mean \n RPKM and length \n
 toc()
 
 zones <- unique(virome$altzones)
-z=2 # 1 to 2 or 3
+z=3 # 1 to 2 or 3
 zones[z]
 #--------------------------------------
 # make an elseif statment to choose cluster number if specified, or full otherwise 
@@ -195,7 +195,7 @@ print(paste("normalizing dataset", zones[z]))
 dat.mat <- datm#/colSums(datm)*100
 dat.mat = round(dat.mat, digits = 0)
 dim(dat.mat)
-dat.mat
+dat.mat[1:5,1:5]
 
 dat.mat.log <- log2(dat.mat)
 dat.mat.log[dat.mat.log==-Inf] <- 0
